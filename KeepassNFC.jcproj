@@ -1,0 +1,8 @@
+<JavaCardProject name="KeepassNFC">
+<USER>
+<PKG name="net.lardcave.keepassnfcapplet" aid="F0 37 54 72 80 4F D5 FA 0F 24 3E 42 C1 B6 38" major="1" minor="0">
+<APPLET aid="F0 37 54 72 80 4F D5 FA 0F 24 3E 42 C1 B6 38 25" instanceaid="" parameter="" authority="" privileges="" index="-21336" name="KeepassNFC"/>
+</PKG>
+<Libs/>
+</USER>
+</JavaCardProject>
