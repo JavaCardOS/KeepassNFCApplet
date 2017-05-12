@@ -101,7 +101,9 @@ public class KeepassNFC extends Applet {
 				case INS_CARD_WRITE_TO_SCRATCH:
 					writeToScratch(apdu);
 					break;
-						
+				default:
+					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
+					break;
 			}
 		}
 	}
@@ -233,18 +235,23 @@ public class KeepassNFC extends Applet {
 		short length = apdu.setIncomingAndReceive();
 		boolean succeeded = false;
 
-		short decrypted = password_cipher.update(buffer, (short)ISO7816.OFFSET_CDATA, length, scratch_area, (short)0);
-		if(decrypted == length) {
+		short decrypted = 0;
+		if ((buffer[ISO7816.OFFSET_P1] & 0x80) != 0) {	// Not last block;
+			decrypted = password_cipher.update(buffer, (short)ISO7816.OFFSET_CDATA, length, scratch_area, (short)0);
+		} else {										// Last block;
+			decrypted = password_cipher.doFinal(buffer, (short)ISO7816.OFFSET_CDATA, length, scratch_area, (short)0);
+		}
+		if(decrypted > 0) {
 			/* We decrypted the blocks successfully, now re-encrypt with the transaction key. */
-			short encrypted = transaction_cipher.update(scratch_area, (short)0, length, buffer, (short)(ISO7816.OFFSET_CDATA + 1));
-			if(encrypted == length) {
+			short encrypted = transaction_cipher.update(scratch_area, (short)0, decrypted, buffer, (short)(ISO7816.OFFSET_CDATA + 1));
+			if(encrypted > 0) {
 				/* We encrypted the new block successfully. */
 				succeeded = true;
 			}
 		}
 
 		buffer[RESPONSE_STATUS_OFFSET] = succeeded ? RESPONSE_SUCCEEDED : RESPONSE_FAILED;
-		apdu.setOutgoingAndSend((short)ISO7816.OFFSET_CDATA, (short)(length + 1));
+		apdu.setOutgoingAndSend((short)ISO7816.OFFSET_CDATA, (short)(decrypted + 1));
 	}
 
 	protected void getVersion(APDU apdu)
